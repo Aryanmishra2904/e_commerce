@@ -2,9 +2,12 @@ package com.aryan.e_commerce.auth;
 
 import com.aryan.e_commerce.email.SendGridEmailService;
 import com.aryan.e_commerce.security.JwtService;
+import com.aryan.e_commerce.security.TokenBlacklist;
+import com.aryan.e_commerce.security.TokenBlacklistRepository;
 import com.aryan.e_commerce.user.User;
 import com.aryan.e_commerce.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -128,4 +131,18 @@ public class AuthService {
 
         userRepository.save(user);
     }
+    @Autowired
+    private TokenBlacklistRepository blacklistRepo;
+
+    public void logout(String token) {
+        Instant expiry = jwtService.extractExpiration(token);
+
+        TokenBlacklist blacklisted = TokenBlacklist.builder()
+                .token(token)
+                .expiresAt(expiry)
+                .build();
+
+        blacklistRepo.save(blacklisted);
+    }
+
 }
