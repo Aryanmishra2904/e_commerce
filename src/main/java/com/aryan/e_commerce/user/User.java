@@ -23,26 +23,24 @@ public class User {
     @Id
     private String id;
 
-    @NotBlank(message = "Name is required")
+    @NotBlank
     private String name;
 
-    @Email(message = "Email must be valid")
+    @Email
     @Indexed(unique = true)
     private String email;
 
-    @Size(min = 6, message = "Password must be at least 6 characters")
+    @Size(min = 6)
     private String password;
 
-    private String role;
+    // ⭐ Use ENUM not String
+    private Role role;
 
-    // ⭐ ADD THIS — Needed for OTP reset
-    @NotBlank(message = "Phone number is required")
+    @NotBlank
     @Indexed(unique = true)
-    @Pattern(regexp = "^[0-9]{10}$",
-            message = "Phone number must be 10 digits")
+    @Pattern(regexp = "^[0-9]{10}$")
     private String phone;
 
-    // ⭐ Used for email reset (already optional)
     private String resetPasswordToken;
     private Instant resetPasswordExpiry;
 

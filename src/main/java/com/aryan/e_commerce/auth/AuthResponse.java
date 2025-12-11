@@ -1,5 +1,6 @@
 package com.aryan.e_commerce.auth;
 
+import com.aryan.e_commerce.user.Role;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -8,5 +9,5 @@ import lombok.Data;
 public class AuthResponse {
     private String token;
     private String userId;
-    private String role;
+    private Role role;
 }
