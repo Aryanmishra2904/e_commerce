@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
@@ -30,6 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
+        // No header → continue filter chain (allow public endpoints)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -37,34 +37,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String jwt = authHeader.substring(7);
 
-        // STEP 5 — Block blacklisted tokens
+        // 1️⃣ CHECK IF TOKEN IS BLACKLISTED
         if (blacklistRepo.findByToken(jwt).isPresent()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Token is blacklisted. Please login again.");
+            response.getWriter().write("Token expired / logged out. Please login again.");
             return;
         }
 
-        String userId = null;
+        // 2️⃣ EXTRACT USER ID FROM JWT
+        String userId;
         try {
             userId = jwtService.extractUserId(jwt);
         } catch (Exception e) {
-            filterChain.doFilter(request, response);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Invalid or expired token.");
             return;
         }
 
-        // Not authenticated yet
+        // 3️⃣ Authentication already done → skip
         if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            UserDetails user = userDetailsService.loadUserById(userId);
+            UserDetails userDetails = userDetailsService.loadUserById(userId);
 
-            if (jwtService.isTokenValid(jwt, user)) {
+            // 4️⃣ VALIDATE TOKEN AGAINST USER
+            if (jwtService.isTokenValid(jwt, userDetails)) {
+
                 UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
 
+        // 5️⃣ CONTINUE FILTER CHAIN
         filterChain.doFilter(request, response);
     }
 }

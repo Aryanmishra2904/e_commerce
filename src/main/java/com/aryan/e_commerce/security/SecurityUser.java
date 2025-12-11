@@ -1,29 +1,41 @@
 package com.aryan.e_commerce.security;
 
+import com.aryan.e_commerce.user.Role;
 import com.aryan.e_commerce.user.User;
-import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
 
-@AllArgsConstructor
+@Getter
 public class SecurityUser implements UserDetails {
 
     private final User user;
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(user.getRole()));
+    public SecurityUser(User user) {
+        this.user = user;
+    }
+
+    public Role getRole() {
+        return user.getRole();   // THIS FIXES THE ERROR
     }
 
     @Override
-    public String getPassword() { return user.getPassword(); }
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(() -> "ROLE_" + user.getRole().name());
+    }
 
     @Override
-    public String getUsername() { return user.getEmail(); }
+    public String getPassword() {
+        return user.getPassword();
+    }
+
+    @Override
+    public String getUsername() {
+        return user.getEmail();
+    }
 
     @Override
     public boolean isAccountNonExpired() { return true; }
