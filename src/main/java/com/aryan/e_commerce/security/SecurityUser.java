@@ -19,7 +19,7 @@ public class SecurityUser implements UserDetails {
     }
 
     public Role getRole() {
-        return user.getRole();   // THIS FIXES THE ERROR
+        return user.getRole();
     }
 
     @Override
@@ -32,9 +32,11 @@ public class SecurityUser implements UserDetails {
         return user.getPassword();
     }
 
+    // ⭐ VERY IMPORTANT ⭐
+    // MUST MATCH JWT SUBJECT (userId)
     @Override
     public String getUsername() {
-        return user.getEmail();
+        return user.getId();
     }
 
     @Override
