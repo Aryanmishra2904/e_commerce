@@ -22,14 +22,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final TokenBlacklistRepository blacklistRepo;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain
+    ) throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
 
-        // No token → allow public routes
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -37,27 +37,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String jwt = authHeader.substring(7);
 
-        // 🔴 Block blacklisted tokens
+        // 1️⃣ Check blacklist
         if (blacklistRepo.findByToken(jwt).isPresent()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Token expired / logged out");
             return;
         }
 
+        // 2️⃣ Extract userId from token
         String userId;
         try {
             userId = jwtService.extractUserId(jwt);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Invalid token");
             return;
         }
 
-        // Authenticate user
+        // 3️⃣ Authenticate
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            // ✅ LOAD USER BY ID (NOT EMAIL)
-            UserDetails userDetails = userDetailsService.loadUserById(userId);
+            UserDetails userDetails =
+                    userDetailsService.loadUserById(userId); // ✅ CORRECT
 
             if (jwtService.isTokenValid(jwt, userDetails)) {
 
