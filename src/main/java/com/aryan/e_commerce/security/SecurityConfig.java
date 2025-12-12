@@ -13,7 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity  // Enables @PreAuthorize
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -23,10 +23,14 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                .csrf(csrf -> csrf.disable())
+                // Disable CSRF for stateless APIs
+                .csrf(AbstractHttpConfigurer::disable)
 
+                // Authorization Rules
                 .authorizeHttpRequests(auth -> auth
-                        // Public auth routes
+                        // ============================
+                        // PUBLIC AUTH ROUTES
+                        // ============================
                         .requestMatchers(
                                 "/auth/signup",
                                 "/auth/login",
@@ -37,22 +41,37 @@ public class SecurityConfig {
                                 "/auth/verify-otp"
                         ).permitAll()
 
-                        // Admin-only routes
+                        // ============================
+                        // IMAGEKIT (PUBLIC AUTH TOKEN)
+                        // ============================
+                        .requestMatchers("/imagekit/auth").permitAll()
+
+                        // ============================
+                        // IMAGE UPLOAD (Admin only)
+                        // ============================
+                        .requestMatchers("/imagekit/upload").hasRole("ADMIN")
+
+                        // ============================
+                        // ADMIN MODULE
+                        // ============================
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
-                        // All other routes require authentication
+                        // ============================
+                        // EVERYTHING ELSE REQUIRES AUTH
+                        // ============================
                         .anyRequest().authenticated()
                 )
 
-                // No sessions → fully stateless
+                // Stateless Session
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
+                // Disable login forms
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .formLogin(form -> form.disable());
+                .formLogin(AbstractHttpConfigurer::disable);
 
-        // Add JWT validation filter
+        // Add JWT Filter BEFORE Username/Password auth
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
