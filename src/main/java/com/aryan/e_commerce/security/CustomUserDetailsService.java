@@ -5,7 +5,6 @@ import com.aryan.e_commerce.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,24 +13,18 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepo;
 
-    // ⭐ Spring Security uses this when authenticating by email (login)
+    // Used by Spring Security (login with email)
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String email) {
         User user = userRepo.findByEmail(email)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found with email: " + email)
-                );
-
+                .orElseThrow(() -> new RuntimeException("User not found"));
         return new SecurityUser(user);
     }
 
-    // ⭐ JWT filter uses this to load user by ID extracted from JWT subject
+    // ✅ Used by JWT filter (load by ID)
     public UserDetails loadUserById(String id) {
         User user = userRepo.findById(id)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found with ID: " + id)
-                );
-
+                .orElseThrow(() -> new RuntimeException("User not found"));
         return new SecurityUser(user);
     }
 }

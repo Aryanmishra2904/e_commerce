@@ -32,22 +32,14 @@ public class SecurityUser implements UserDetails {
         return user.getPassword();
     }
 
-    // ⭐ VERY IMPORTANT ⭐
-    // MUST MATCH JWT SUBJECT (userId)
+    // 🔥 MUST MATCH JWT "sub"
     @Override
     public String getUsername() {
         return user.getId();
     }
 
-    @Override
-    public boolean isAccountNonExpired() { return true; }
-
-    @Override
-    public boolean isAccountNonLocked() { return true; }
-
-    @Override
-    public boolean isCredentialsNonExpired() { return true; }
-
-    @Override
-    public boolean isEnabled() { return true; }
+    @Override public boolean isAccountNonExpired() { return true; }
+    @Override public boolean isAccountNonLocked() { return true; }
+    @Override public boolean isCredentialsNonExpired() { return true; }
+    @Override public boolean isEnabled() { return true; }
 }

@@ -29,7 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String authHeader = request.getHeader("Authorization");
 
-        // No header → continue filter chain (allow public endpoints)
+        // No token → allow public routes
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -37,29 +37,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String jwt = authHeader.substring(7);
 
-        // 1️⃣ CHECK IF TOKEN IS BLACKLISTED
+        // 🔴 Block blacklisted tokens
         if (blacklistRepo.findByToken(jwt).isPresent()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Token expired / logged out. Please login again.");
+            response.getWriter().write("Token expired / logged out");
             return;
         }
 
-        // 2️⃣ EXTRACT USER ID FROM JWT
         String userId;
         try {
             userId = jwtService.extractUserId(jwt);
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Invalid or expired token.");
+            response.getWriter().write("Invalid token");
             return;
         }
 
-        // 3️⃣ Authentication already done → skip
-        if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        // Authenticate user
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
 
+            // ✅ LOAD USER BY ID (NOT EMAIL)
             UserDetails userDetails = userDetailsService.loadUserById(userId);
 
-            // 4️⃣ VALIDATE TOKEN AGAINST USER
             if (jwtService.isTokenValid(jwt, userDetails)) {
 
                 UsernamePasswordAuthenticationToken authToken =
@@ -73,7 +72,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        // 5️⃣ CONTINUE FILTER CHAIN
         filterChain.doFilter(request, response);
     }
 }
