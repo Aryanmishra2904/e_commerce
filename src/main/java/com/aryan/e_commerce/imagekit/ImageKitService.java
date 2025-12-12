@@ -42,7 +42,14 @@ public class ImageKitService {
                     .build();
 
             Response response = client.newCall(request).execute();
+
+            if (!response.isSuccessful()) {
+                System.out.println("❌ ImageKit upload failed: " + response.code());
+                return null;
+            }
+
             String jsonResponse = response.body().string();
+            System.out.println("✅ ImageKit response: " + jsonResponse);
 
             JSONObject json = new JSONObject(jsonResponse);
             return json.getString("url");
