@@ -20,12 +20,45 @@ public class AdminProductService {
     private final ProductRepository productRepo;
     private final ImageKitService imageKitService;
 
+    // =============================
+    // CREATE PRODUCT
+    // =============================
     public Product createProduct(ProductDto dto, List<MultipartFile> images) {
 
+        System.out.println("➡️ Service: createProduct() STARTED");
+
         List<String> uploaded = new ArrayList<>();
-        if (images != null)
-            for (MultipartFile img : images)
-                uploaded.add(imageKitService.upload(img));
+
+        if (images == null) {
+            System.out.println("⚠️ images list is NULL");
+        } else if (images.isEmpty()) {
+            System.out.println("⚠️ images list is EMPTY");
+        } else {
+            System.out.println("🖼️ Total images received: " + images.size());
+
+            for (int i = 0; i < images.size(); i++) {
+                MultipartFile img = images.get(i);
+
+                System.out.println("⬆️ Uploading image #" + (i + 1));
+                System.out.println("   Name: " + img.getOriginalFilename());
+                System.out.println("   Size: " + img.getSize());
+                System.out.println("   Type: " + img.getContentType());
+
+                String url = imageKitService.upload(img);
+
+                if (url != null) {
+                    System.out.println("✅ Image uploaded successfully");
+                    System.out.println("   URL: " + url);
+                    uploaded.add(url);
+                } else {
+                    System.out.println("❌ Image upload FAILED for: " + img.getOriginalFilename());
+                }
+            }
+        }
+
+        System.out.println("📦 Total uploaded image URLs: " + uploaded.size());
+
+        System.out.println("🛠️ Building Product object");
 
         Product p = Product.builder()
                 .title(dto.getTitle())
@@ -41,12 +74,29 @@ public class AdminProductService {
                 .createdAt(Instant.now().toEpochMilli())
                 .build();
 
-        return productRepo.save(p);
+        System.out.println("💾 Saving product to database");
+
+        Product saved = productRepo.save(p);
+
+        System.out.println("✅ Product saved successfully");
+        System.out.println("🆔 Product ID: " + saved.getId());
+
+        System.out.println("➡️ Service: createProduct() FINISHED\n");
+
+        return saved;
     }
 
+    // =============================
+    // UPDATE PRODUCT
+    // =============================
     public Optional<Product> updateProduct(String id, ProductDto dto, List<MultipartFile> images) {
 
+        System.out.println("➡️ Service: updateProduct() STARTED");
+        System.out.println("🆔 Product ID: " + id);
+
         return productRepo.findById(id).map(existing -> {
+
+            System.out.println("✅ Existing product found");
 
             existing.setTitle(dto.getTitle());
             existing.setDescription(dto.getDescription());
@@ -58,18 +108,54 @@ public class AdminProductService {
             existing.setAvailableColors(dto.getAvailableColors());
             existing.setActive(dto.isActive());
 
-            if (images != null && !images.isEmpty()) {
+            if (images == null || images.isEmpty()) {
+                System.out.println("⚠️ No new images provided for update");
+            } else {
+                System.out.println("🖼️ New images received: " + images.size());
+
                 List<String> newImages = new ArrayList<>();
-                for (MultipartFile img : images)
-                    newImages.add(imageKitService.upload(img));
+
+                for (MultipartFile img : images) {
+                    System.out.println("⬆️ Uploading new image: " + img.getOriginalFilename());
+
+                    String url = imageKitService.upload(img);
+
+                    if (url != null) {
+                        System.out.println("✅ Image uploaded: " + url);
+                        newImages.add(url);
+                    } else {
+                        System.out.println("❌ Image upload failed: " + img.getOriginalFilename());
+                    }
+                }
+
                 existing.setImages(newImages);
             }
 
-            return productRepo.save(existing);
+            System.out.println("💾 Saving updated product");
+
+            Product updated = productRepo.save(existing);
+
+            System.out.println("✅ Product updated successfully");
+            return updated;
         });
     }
 
-    public void deleteProduct(String id) { productRepo.deleteById(id); }
-    public Product getProduct(String id) { return productRepo.findById(id).orElse(null); }
-    public List<Product> listProducts() { return productRepo.findAll(); }
+    // =============================
+    // DELETE PRODUCT
+    // =============================
+    public void deleteProduct(String id) {
+        System.out.println("🗑️ Deleting product with ID: " + id);
+        productRepo.deleteById(id);
+        System.out.println("✅ Product deleted");
+    }
+
+    public Product getProduct(String id) {
+        System.out.println("🔍 Fetching product with ID: " + id);
+        return productRepo.findById(id).orElse(null);
+    }
+
+    public List<Product> listProducts() {
+        System.out.println("📄 Fetching all products");
+        return productRepo.findAll();
+    }
 }
