@@ -2,6 +2,8 @@ package com.aryan.e_commerce.imagekit;
 
 import okhttp3.*;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -10,6 +12,9 @@ import java.util.Objects;
 
 @Service
 public class ImageKitService {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(ImageKitService.class);
 
     @Value("${imagekit.publicKey}")
     private String publicKey;
@@ -21,24 +26,24 @@ public class ImageKitService {
 
     public String upload(MultipartFile file) {
 
-        System.out.println("📥 Starting ImageKit upload...");
+        log.info("📥 ImageKit upload STARTED");
 
         try {
             // 1️⃣ Validate file
             if (file == null || file.isEmpty()) {
-                System.out.println("❌ File is null or empty");
+                log.error("❌ File is null or empty");
                 return null;
             }
 
-            System.out.println("📄 File name: " + file.getOriginalFilename());
-            System.out.println("📦 File size: " + file.getSize());
-            System.out.println("🧾 Content type: " + file.getContentType());
+            log.info("📄 File name: {}", file.getOriginalFilename());
+            log.info("📦 File size: {} bytes", file.getSize());
+            log.info("🧾 Content type: {}", file.getContentType());
 
-            // 2️⃣ Prepare upload URL
+            // 2️⃣ Upload URL
             String uploadUrl = "https://upload.imagekit.io/api/v1/files/upload";
-            System.out.println("🌐 Upload URL: " + uploadUrl);
+            log.debug("🌐 Upload URL: {}", uploadUrl);
 
-            // 3️⃣ Create file body
+            // 3️⃣ File body
             RequestBody fileBody = RequestBody.create(
                     file.getBytes(),
                     MediaType.parse(
@@ -48,64 +53,62 @@ public class ImageKitService {
                             )
                     )
             );
+            log.debug("✅ File body created");
 
-            System.out.println("✅ File body created");
-
-            // 4️⃣ Build multipart request
+            // 4️⃣ Multipart body
             MultipartBody requestBody = new MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
                     .addFormDataPart("file", file.getOriginalFilename(), fileBody)
                     .addFormDataPart("fileName", file.getOriginalFilename())
-                    .addFormDataPart("folder", "/products") // optional but recommended
+                    .addFormDataPart("folder", "/products")
                     .addFormDataPart("useUniqueFileName", "true")
                     .build();
 
-            System.out.println("✅ Multipart body built");
+            log.debug("✅ Multipart body built");
 
-            // 5️⃣ Create auth header
+            // 5️⃣ Authorization header
             String auth = Credentials.basic(publicKey, privateKey);
-            System.out.println("🔐 Authorization header created");
+            log.debug("🔐 Authorization header generated");
 
-            // 6️⃣ Build request
+            // 6️⃣ Request
             Request request = new Request.Builder()
                     .url(uploadUrl)
                     .header("Authorization", auth)
                     .post(requestBody)
                     .build();
 
-            System.out.println("🚀 Sending request to ImageKit...");
+            log.info("🚀 Sending request to ImageKit");
 
             // 7️⃣ Execute request
             try (Response response = client.newCall(request).execute()) {
 
-                System.out.println("📡 Response received");
-                System.out.println("📟 HTTP Status Code: " + response.code());
+                log.info("📡 Response received from ImageKit");
+                log.info("📟 HTTP Status Code: {}", response.code());
 
-                String responseBody = response.body() != null ? response.body().string() : null;
+                String responseBody =
+                        response.body() != null ? response.body().string() : null;
 
                 if (!response.isSuccessful()) {
-                    System.out.println("❌ ImageKit upload failed");
-                    System.out.println("🧨 Response body: " + responseBody);
+                    log.error("❌ ImageKit upload FAILED");
+                    log.error("🧨 Response body: {}", responseBody);
                     return null;
                 }
 
-                // 8️⃣ Parse JSON
+                // 8️⃣ Parse response
                 JSONObject json = new JSONObject(responseBody);
 
                 String imageUrl = json.getString("url");
                 String fileId = json.getString("fileId");
 
-                System.out.println("✅ Upload successful!");
-                System.out.println("🖼️ Image URL: " + imageUrl);
-                System.out.println("🆔 File ID: " + fileId);
+                log.info("✅ Image uploaded SUCCESSFULLY");
+                log.info("🖼️ Image URL: {}", imageUrl);
+                log.info("🆔 ImageKit File ID: {}", fileId);
 
-                // 👉 Store BOTH in DB ideally
                 return imageUrl;
             }
 
         } catch (Exception e) {
-            System.out.println("🔥 Exception during ImageKit upload");
-            e.printStackTrace();
+            log.error("🔥 Exception during ImageKit upload", e);
             return null;
         }
     }

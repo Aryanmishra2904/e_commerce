@@ -5,6 +5,8 @@ import com.aryan.e_commerce.product.Product;
 import com.aryan.e_commerce.product.dto.ProductDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +19,9 @@ import java.util.List;
 @RequestMapping("/admin/products")
 @RequiredArgsConstructor
 public class AdminProductController {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(AdminProductController.class);
 
     private final AdminProductService service;
     private final ObjectMapper objectMapper;
@@ -34,35 +39,33 @@ public class AdminProductController {
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) throws Exception {
 
-        System.out.println("🚀 CREATE PRODUCT API HIT");
+        log.info("🚀 CREATE PRODUCT API HIT");
 
-        // 1️⃣ Log raw product JSON
-        System.out.println("📦 Product JSON received:");
-        System.out.println(productJson);
+        log.debug("📦 Raw product JSON: {}", productJson);
 
-        // 2️⃣ Parse DTO
         ProductDto dto = objectMapper.readValue(productJson, ProductDto.class);
-        System.out.println("✅ Product DTO parsed successfully");
+        log.info("✅ Product DTO parsed successfully");
 
-        // 3️⃣ Check images
         if (images == null || images.isEmpty()) {
-            System.out.println("⚠️ No images received in request");
+            log.warn("⚠️ No images received in request");
         } else {
-            System.out.println("🖼️ Total images received: " + images.size());
+            log.info("🖼️ Total images received: {}", images.size());
             for (int i = 0; i < images.size(); i++) {
                 MultipartFile file = images.get(i);
-                System.out.println("➡️ Image " + (i + 1));
-                System.out.println("   Name: " + file.getOriginalFilename());
-                System.out.println("   Size: " + file.getSize());
-                System.out.println("   Type: " + file.getContentType());
+                log.info(
+                        "➡️ Image {} | Name={} | Size={} | Type={}",
+                        i + 1,
+                        file.getOriginalFilename(),
+                        file.getSize(),
+                        file.getContentType()
+                );
             }
         }
 
-        // 4️⃣ Call service
-        System.out.println("📞 Calling AdminProductService.createProduct()");
+        log.info("📞 Calling AdminProductService.createProduct()");
         Product saved = service.createProduct(dto, images);
 
-        System.out.println("✅ Product created successfully with ID: " + saved.getId());
+        log.info("✅ Product created successfully | ID={}", saved.getId());
 
         return ResponseEntity.ok(saved);
     }
@@ -82,30 +85,27 @@ public class AdminProductController {
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) throws Exception {
 
-        System.out.println("✏️ UPDATE PRODUCT API HIT");
-        System.out.println("🆔 Product ID: " + id);
-
-        System.out.println("📦 Product JSON received:");
-        System.out.println(productJson);
+        log.info("✏️ UPDATE PRODUCT API HIT | productId={}", id);
+        log.debug("📦 Raw product JSON: {}", productJson);
 
         ProductDto dto = objectMapper.readValue(productJson, ProductDto.class);
-        System.out.println("✅ Product DTO parsed");
+        log.info("✅ Product DTO parsed successfully");
 
         if (images == null || images.isEmpty()) {
-            System.out.println("⚠️ No images received for update");
+            log.warn("⚠️ No images received for update");
         } else {
-            System.out.println("🖼️ Images received for update: " + images.size());
+            log.info("🖼️ Images received for update: {}", images.size());
         }
 
-        System.out.println("📞 Calling AdminProductService.updateProduct()");
+        log.info("📞 Calling AdminProductService.updateProduct()");
 
         return service.updateProduct(id, dto, images)
                 .map(product -> {
-                    System.out.println("✅ Product updated successfully");
+                    log.info("✅ Product updated successfully | ID={}", id);
                     return ResponseEntity.ok(product);
                 })
                 .orElseGet(() -> {
-                    System.out.println("❌ Product not found for ID: " + id);
+                    log.error("❌ Product not found | ID={}", id);
                     return ResponseEntity.notFound().build();
                 });
     }
@@ -117,9 +117,10 @@ public class AdminProductController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Product>> getAllProducts() {
 
-        System.out.println("📄 GET ALL PRODUCTS API HIT");
+        log.info("📄 GET ALL PRODUCTS API HIT");
+
         List<Product> products = service.listProducts();
-        System.out.println("📊 Total products found: " + products.size());
+        log.info("📊 Total products found: {}", products.size());
 
         return ResponseEntity.ok(products);
     }
@@ -131,17 +132,16 @@ public class AdminProductController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Product> getProduct(@PathVariable String id) {
 
-        System.out.println("🔍 GET PRODUCT API HIT");
-        System.out.println("🆔 Product ID: " + id);
+        log.info("🔍 GET PRODUCT API HIT | ID={}", id);
 
         Product product = service.getProduct(id);
 
         if (product == null) {
-            System.out.println("❌ Product not found");
+            log.warn("❌ Product not found | ID={}", id);
             return ResponseEntity.notFound().build();
         }
 
-        System.out.println("✅ Product found");
+        log.info("✅ Product found | ID={}", id);
         return ResponseEntity.ok(product);
     }
 
@@ -152,12 +152,11 @@ public class AdminProductController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteProduct(@PathVariable String id) {
 
-        System.out.println("🗑️ DELETE PRODUCT API HIT");
-        System.out.println("🆔 Product ID: " + id);
+        log.info("🗑️ DELETE PRODUCT API HIT | ID={}", id);
 
         service.deleteProduct(id);
-        System.out.println("✅ Product deleted");
 
+        log.info("✅ Product deleted | ID={}", id);
         return ResponseEntity.ok().build();
     }
 }
