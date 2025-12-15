@@ -16,9 +16,6 @@ public class ImageKitService {
     private static final Logger log =
             LoggerFactory.getLogger(ImageKitService.class);
 
-    @Value("${imagekit.publicKey}")
-    private String publicKey;
-
     @Value("${imagekit.privateKey}")
     private String privateKey;
 
@@ -66,9 +63,9 @@ public class ImageKitService {
 
             log.debug("✅ Multipart body built");
 
-            // 5️⃣ Authorization header
-            String auth = Credentials.basic(publicKey, privateKey);
-            log.debug("🔐 Authorization header generated");
+            // 5️⃣ Authorization header (CORRECT)
+            String auth = Credentials.basic(privateKey, "");
+            log.debug("🔐 Authorization header generated (private key only)");
 
             // 6️⃣ Request
             Request request = new Request.Builder()
