@@ -34,4 +34,9 @@ public class InventoryController {
 
         return inventoryRepository.save(inventory);
     }
+    @GetMapping("/low-stock")
+    public List<Inventory> getLowStockItems() {
+        return inventoryRepository.findByStatus(InventoryStatus.LOW_STOCK);
+    }
+
 }

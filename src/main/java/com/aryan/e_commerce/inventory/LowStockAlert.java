@@ -1,34 +1,32 @@
 package com.aryan.e_commerce.inventory;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "inventory")
+import java.time.LocalDateTime;
+
+@Document(collection = "low_stock_alerts")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Inventory {
+public class LowStockAlert {
 
     @Id
     private String id;
 
-    private String productId;
+    private String inventoryId;
 
     private String sku;
-
     private String color;
-
     private Double lengthInMeters;
 
-    private Integer availableStock;
+    private Integer currentStock;
 
-    private Integer reservedStock; // optional (future)
-
-    private InventoryStatus status;
-    private Integer lowStockThreshold;
-    private boolean lowStockAlertSent;
-
-
+    private LocalDateTime triggeredAt;
 }
+

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
+    private final LowStockAlertService lowStockAlertService;
 
     // ✅ Check stock before checkout
     public void validateStock(Order order) {
@@ -34,7 +35,7 @@ public class InventoryService {
         }
     }
 
-    // ✅ Deduct stock after payment success
+    // ✅ Deduct stock after payment success + LOW STOCK ALERT
     public void deductStock(Order order) {
 
         for (OrderItem item : order.getItems()) {
@@ -47,12 +48,26 @@ public class InventoryService {
                     )
                     .orElseThrow();
 
-            inventory.setAvailableStock(
-                    inventory.getAvailableStock() - item.getQuantity()
-            );
+            int remainingStock =
+                    inventory.getAvailableStock() - item.getQuantity();
 
-            if (inventory.getAvailableStock() <= 0) {
+            inventory.setAvailableStock(remainingStock);
+
+            // 🔑 STATUS UPDATE
+            if (remainingStock <= 0) {
                 inventory.setStatus(InventoryStatus.OUT_OF_STOCK);
+
+            } else if (remainingStock <= inventory.getLowStockThreshold()) {
+                inventory.setStatus(InventoryStatus.LOW_STOCK);
+
+                // 🔔 Trigger alert only once
+                if (!inventory.isLowStockAlertSent()) {
+                    lowStockAlertService.triggerAlert(inventory);
+                    inventory.setLowStockAlertSent(true);
+                }
+
+            } else {
+                inventory.setStatus(InventoryStatus.IN_STOCK);
             }
 
             inventoryRepository.save(inventory);
@@ -77,6 +92,7 @@ public class InventoryService {
             );
 
             inventory.setStatus(InventoryStatus.IN_STOCK);
+            inventory.setLowStockAlertSent(false); // reset alert
 
             inventoryRepository.save(inventory);
         }
