@@ -12,11 +12,14 @@ public class OrderItem {
 
     private String sku;
 
+    private String productName;
+    private String productImage;
+
     private String color;
 
     private Double lengthInMeters;
 
     private Integer quantity;
 
-    private Double price;  // price at the moment of purchase
+    private Double unitPrice; // price at time of purchase
 }

@@ -1,33 +1,32 @@
 package com.aryan.e_commerce.payment;
 
+import com.aryan.e_commerce.order.PaymentMode;
+import com.aryan.e_commerce.order.PaymentStatus;
 import lombok.*;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
+
+@Document(collection = "payments")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "payments")
 public class Payment {
 
     @Id
     private String id;
 
-    @Indexed
-    private String orderId;       // Which order this payment belongs to
+    private String orderId;
 
-    private String paymentId;     // Razorpay/Stripe payment ID
+    private PaymentMode mode;
+    private PaymentStatus status;
 
-    private String gatewayOrderId; // Razorpay/Stripe orderId (important!)
+    private String gatewayPaymentId;
+    private String gatewayOrderId;
 
-    private String method;         // UPI, CARD, NETBANKING, COD
+    private double amount;
 
-    private Double amount;
-
-    private String status;        // PENDING, SUCCESS, FAILED, REFUNDED
-
-    private long createdAt;
-
+    private LocalDateTime createdAt;
 }
