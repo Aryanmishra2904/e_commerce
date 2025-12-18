@@ -17,16 +17,17 @@ public class Payment {
 
     @Id
     private String id;
-
     private String orderId;
-
-    private PaymentMode mode;
+    private String userId;
+    private Double amount;
     private PaymentStatus status;
-
-    private String gatewayPaymentId;
-    private String gatewayOrderId;
-
-    private double amount;
-
+    private PaymentMode mode;
+    private String razorpayOrderId;
+    private String razorpayPaymentId;
+    private String razorpaySignature;
+    private String payerName;
+    private String payerEmail;
+    private String payerContact;
+    private LocalDateTime paidAt;
     private LocalDateTime createdAt;
 }

@@ -8,6 +8,8 @@ import java.util.List;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AdminOrderResponse {
 
     private String orderId;
@@ -26,4 +28,7 @@ public class AdminOrderResponse {
     private OrderAddress shippingAddress;
 
     private LocalDateTime orderedAt;
+
+    private String payerName;
+    private String payerContact;
 }

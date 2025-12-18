@@ -1,7 +1,8 @@
 package com.aryan.e_commerce.admin.service;
+
 import com.aryan.e_commerce.admin.dto.AdminOrderResponse;
 import com.aryan.e_commerce.order.Order;
-import com.aryan.e_commerce.order.*;
+import com.aryan.e_commerce.order.OrderRepository;
 import com.aryan.e_commerce.order.OrderStatus;
 import com.aryan.e_commerce.order.PaymentMode;
 import com.aryan.e_commerce.order.PaymentStatus;
@@ -12,7 +13,6 @@ import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @RequiredArgsConstructor
@@ -21,22 +21,33 @@ public class AdminOrderService {
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
 
+    // =============================
+    // GET ALL ORDERS (ADMIN)
+    // =============================
     public Page<AdminOrderResponse> getAllOrders(int page, int size) {
 
         Pageable pageable = PageRequest.of(
-                page, size, Sort.by("createdAt").descending());
+                page, size, Sort.by("createdAt").descending()
+        );
 
         return orderRepository.findAll(pageable)
                 .map(this::mapToAdminResponse);
     }
 
+    // =============================
+    // GET ORDER BY ID (ADMIN)
+    // =============================
     public AdminOrderResponse getOrderById(String orderId) {
+
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
         return mapToAdminResponse(order);
     }
 
+    // =============================
+    // UPDATE ORDER STATUS (ADMIN)
+    // =============================
     public Order updateOrderStatus(String orderId, OrderStatus newStatus) {
 
         Order order = orderRepository.findById(orderId)
@@ -46,7 +57,7 @@ public class AdminOrderService {
 
         order.setStatus(newStatus);
 
-        // ✅ COD payment becomes SUCCESS on delivery
+        // ✅ COD payment becomes SUCCESS only after delivery
         if (newStatus == OrderStatus.DELIVERED
                 && order.getPaymentMode() == PaymentMode.COD) {
 
@@ -63,21 +74,46 @@ public class AdminOrderService {
         return orderRepository.save(order);
     }
 
+    // =============================
+    // MAP ORDER → ADMIN RESPONSE
+    // =============================
     private AdminOrderResponse mapToAdminResponse(Order order) {
 
-        String transactionId = order.getPaymentId() == null
-                ? null
-                : paymentRepository.findById(order.getPaymentId())
-                .map(Payment::getGatewayPaymentId)
-                .orElse(null);
+        String transactionId = null;
+        String payerName = null;
+        String payerContact = null;
+
+        if (order.getPaymentId() != null) {
+            Payment payment = paymentRepository
+                    .findById(order.getPaymentId())
+                    .orElse(null);
+
+            if (payment != null) {
+                transactionId = payment.getRazorpayPaymentId(); // ✅ FIXED
+                payerName = payment.getPayerName();
+                payerContact = payment.getPayerContact();
+            }
+        }
 
         return AdminOrderResponse.builder()
+                .orderId(order.getId())
+                .userId(order.getUserId())
+                .items(order.getItems())
+                .totalAmount(order.getTotalAmount())
+                .orderStatus(order.getStatus())
+                .paymentStatus(order.getPaymentStatus())
+                .paymentMode(order.getPaymentMode())
                 .transactionId(transactionId)
+                .payerName(payerName)
+                .payerContact(payerContact)
+                .shippingAddress(order.getShippingAddress())
+                .orderedAt(order.getCreatedAt())
                 .build();
-
-
     }
 
+    // =============================
+    // VALIDATE ORDER STATUS FLOW
+    // =============================
     private void validateTransition(OrderStatus current, OrderStatus next) {
 
         if (current == OrderStatus.CANCELLED
@@ -86,7 +122,7 @@ public class AdminOrderService {
         }
 
         if (current == OrderStatus.SHIPPED && next == OrderStatus.PLACED) {
-            throw new RuntimeException("Invalid order transition");
+            throw new RuntimeException("Invalid order status transition");
         }
     }
 }
