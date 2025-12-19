@@ -30,4 +30,7 @@ public class Payment {
     private String payerContact;
     private LocalDateTime paidAt;
     private LocalDateTime createdAt;
+
+    public void setMethod(String method) {
+    }
 }

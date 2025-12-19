@@ -20,10 +20,6 @@ public class AdminOrderService {
 
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
-
-    // =============================
-    // GET ALL ORDERS (ADMIN)
-    // =============================
     public Page<AdminOrderResponse> getAllOrders(int page, int size) {
 
         Pageable pageable = PageRequest.of(
@@ -33,10 +29,6 @@ public class AdminOrderService {
         return orderRepository.findAll(pageable)
                 .map(this::mapToAdminResponse);
     }
-
-    // =============================
-    // GET ORDER BY ID (ADMIN)
-    // =============================
     public AdminOrderResponse getOrderById(String orderId) {
 
         Order order = orderRepository.findById(orderId)
@@ -44,10 +36,6 @@ public class AdminOrderService {
 
         return mapToAdminResponse(order);
     }
-
-    // =============================
-    // UPDATE ORDER STATUS (ADMIN)
-    // =============================
     public Order updateOrderStatus(String orderId, OrderStatus newStatus) {
 
         Order order = orderRepository.findById(orderId)
@@ -73,10 +61,6 @@ public class AdminOrderService {
         order.setUpdatedAt(LocalDateTime.now());
         return orderRepository.save(order);
     }
-
-    // =============================
-    // MAP ORDER → ADMIN RESPONSE
-    // =============================
     private AdminOrderResponse mapToAdminResponse(Order order) {
 
         String transactionId = null;
@@ -110,10 +94,6 @@ public class AdminOrderService {
                 .orderedAt(order.getCreatedAt())
                 .build();
     }
-
-    // =============================
-    // VALIDATE ORDER STATUS FLOW
-    // =============================
     private void validateTransition(OrderStatus current, OrderStatus next) {
 
         if (current == OrderStatus.CANCELLED
