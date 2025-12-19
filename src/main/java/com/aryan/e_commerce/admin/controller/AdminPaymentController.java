@@ -1,15 +1,10 @@
 package com.aryan.e_commerce.admin.controller;
-
-import com.aryan.e_commerce.payment.Payment;
-import com.aryan.e_commerce.payment.PaymentRepository;
+import com.aryan.e_commerce.admin.service.AdminPaymentService;
+import com.aryan.e_commerce.admin.dto.AdminPaymentResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/admin/payments")
@@ -17,16 +12,26 @@ import java.util.List;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminPaymentController {
 
-    private final PaymentRepository paymentRepository;
+    private final AdminPaymentService adminPaymentService;
 
+    // ============================
+    // GET ALL PAYMENTS (PAGINATED)
+    // ============================
     @GetMapping
-    public List<Payment> getAllPayments() {
-        return paymentRepository.findAll();
+    public Page<AdminPaymentResponse> getAllPayments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return adminPaymentService.getAllPayments(page, size);
     }
 
-    @GetMapping("/{id}")
-    public Payment getPayment(@PathVariable String id) {
-        return paymentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Payment not found"));
+    // ============================
+    // GET PAYMENT BY ID
+    // ============================
+    @GetMapping("/{paymentId}")
+    public AdminPaymentResponse getPaymentById(
+            @PathVariable String paymentId
+    ) {
+        return adminPaymentService.getPaymentById(paymentId);
     }
 }

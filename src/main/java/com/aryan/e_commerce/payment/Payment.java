@@ -30,7 +30,7 @@ public class Payment {
     private String payerContact;
     private LocalDateTime paidAt;
     private LocalDateTime createdAt;
-
-    public void setMethod(String method) {
-    }
+    private String method;   // upi / card / netbanking
+    private String bank;     // hdfc, sbi, icici
+    private String wallet;  // phonepe, gpay
 }
