@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -21,6 +22,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final CustomUserDetailsService userDetailsService;
     private final TokenBlacklistRepository blacklistRepo;
 
+    // ✅ PUBLIC ENDPOINTS (NO JWT REQUIRED)
+    private static final List<String> PUBLIC_PATHS = List.of(
+            "/auth/",
+            "/payments/create",
+            "/payments/webhook",
+            "/imagekit/auth"
+    );
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -28,10 +37,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
+        String requestPath = request.getRequestURI();
+
+        // ✅ SKIP JWT FILTER FOR PUBLIC PATHS
+        for (String path : PUBLIC_PATHS) {
+            if (requestPath.startsWith(path)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+        }
+
         String authHeader = request.getHeader("Authorization");
 
+        // 🔒 For protected endpoints, JWT is required
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
 
@@ -44,7 +64,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 2️⃣ Extract userId from token
+        // 2️⃣ Extract userId
         String userId;
         try {
             userId = jwtService.extractUserId(jwt);
@@ -57,7 +77,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UserDetails userDetails =
-                    userDetailsService.loadUserById(userId); // ✅ CORRECT
+                    userDetailsService.loadUserById(userId);
 
             if (jwtService.isTokenValid(jwt, userDetails)) {
 
@@ -68,7 +88,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 userDetails.getAuthorities()
                         );
 
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                SecurityContextHolder.getContext()
+                        .setAuthentication(authToken);
             }
         }
 

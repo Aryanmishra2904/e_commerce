@@ -4,6 +4,7 @@ import com.aryan.e_commerce.order.Order;
 import com.aryan.e_commerce.order.OrderRepository;
 import com.aryan.e_commerce.order.PaymentMode;
 import com.aryan.e_commerce.order.PaymentStatus;
+import com.aryan.e_commerce.payment.dto.PaymentCreateResponse;
 import com.aryan.e_commerce.payment.gateway.RazorpayService;
 import com.aryan.e_commerce.payment.gateway.RazorpayWebhookUtil;
 import lombok.RequiredArgsConstructor;
@@ -29,28 +30,46 @@ public class PaymentController {
 
     @Value("${razorpay.webhook.secret}")
     private String webhookSecret;
-    @PostMapping("/create/{orderId}")
-    public com.razorpay.Order createPayment(@PathVariable String orderId) throws Exception {
 
+    // ====================================
+    // CREATE PAYMENT (CHECKOUT)
+    // ====================================
+    @PostMapping(
+            value = "/create/{orderId}",
+            produces = "application/json"
+    )
+    public PaymentCreateResponse createPayment(
+            @PathVariable String orderId
+    ) throws Exception {
+
+        // 1️⃣ Fetch order
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
+        // 2️⃣ Create Razorpay order
         com.razorpay.Order razorpayOrder =
                 razorpayService.createRazorpayOrder(order.getTotalAmount());
 
-        paymentRepository.save(Payment.builder()
-                .orderId(order.getId())
-                .userId(order.getUserId())
-                .amount(order.getTotalAmount())
-                .status(PaymentStatus.PENDING)
-                .mode(PaymentMode.UPI)
-                .razorpayOrderId(razorpayOrder.get("id"))
-                .createdAt(LocalDateTime.now())
-                .build());
+        // 3️⃣ Save payment as PENDING
+        paymentRepository.save(
+                Payment.builder()
+                        .orderId(order.getId())
+                        .userId(order.getUserId())
+                        .amount(order.getTotalAmount())
+                        .status(PaymentStatus.PENDING)
+                        .mode(PaymentMode.UPI)
+                        .razorpayOrderId(razorpayOrder.get("id"))
+                        .createdAt(LocalDateTime.now())
+                        .build()
+        );
 
-        return razorpayOrder;
+        // 4️⃣ Return clean JSON response
+        return new PaymentCreateResponse(
+                razorpayOrder.get("id"),
+                razorpayOrder.get("amount"),
+                razorpayOrder.get("currency")
+        );
     }
-
 
     // ====================================
     // RAZORPAY WEBHOOK (SOURCE OF TRUTH)
@@ -61,7 +80,7 @@ public class PaymentController {
             @RequestHeader("X-Razorpay-Signature") String signature
     ) {
 
-        // 1️⃣ Verify webhook signature
+        // 1️⃣ Verify signature
         boolean isValid = RazorpayWebhookUtil.verifySignature(
                 payload, signature, webhookSecret
         );
@@ -72,7 +91,7 @@ public class PaymentController {
                     .body("Invalid signature");
         }
 
-        // 2️⃣ Parse webhook payload
+        // 2️⃣ Parse payload
         JSONObject json = new JSONObject(payload);
         String event = json.getString("event");
 
@@ -96,12 +115,12 @@ public class PaymentController {
                     paymentEntity.getString("method")
             );
 
-            log.info("Payment captured for Razorpay Order {}", razorpayOrderId);
+            log.info("Payment SUCCESS for Razorpay Order {}", razorpayOrderId);
         }
 
         if ("payment.failed".equals(event)) {
             paymentService.handlePaymentFailed(razorpayOrderId);
-            log.warn("Payment failed for Razorpay Order {}", razorpayOrderId);
+            log.warn("Payment FAILED for Razorpay Order {}", razorpayOrderId);
         }
 
         return ResponseEntity.ok("OK");
