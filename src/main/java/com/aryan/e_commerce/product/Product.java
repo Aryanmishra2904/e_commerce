@@ -46,4 +46,8 @@ public class Product {
     private Boolean isActive;
 
     private Instant createdAt;
+
+    public boolean setActive(boolean active) {
+        return false;
+    }
 }

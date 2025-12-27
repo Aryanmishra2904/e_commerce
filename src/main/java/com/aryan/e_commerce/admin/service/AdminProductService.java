@@ -19,10 +19,6 @@ public class AdminProductService {
 
     private final ProductRepository productRepo;
     private final ImageKitService imageKitService;
-
-    // =============================
-    // CREATE PRODUCT
-    // =============================
     public Product createProduct(ProductDto dto, List<MultipartFile> images) {
 
         System.out.println("➡️ Service: createProduct() STARTED");
@@ -71,7 +67,7 @@ public class AdminProductService {
                 .availableColors(dto.getAvailableColors())
                 .images(uploaded)
                 .isActive(dto.isActive())
-                .createdAt(Instant.now().toEpochMilli())
+                .createdAt(Instant.ofEpochSecond(Instant.now().toEpochMilli()))
                 .build();
 
         System.out.println("💾 Saving product to database");
@@ -85,10 +81,6 @@ public class AdminProductService {
 
         return saved;
     }
-
-    // =============================
-    // UPDATE PRODUCT
-    // =============================
     public Optional<Product> updateProduct(String id, ProductDto dto, List<MultipartFile> images) {
 
         System.out.println("➡️ Service: updateProduct() STARTED");
@@ -139,10 +131,6 @@ public class AdminProductService {
             return updated;
         });
     }
-
-    // =============================
-    // DELETE PRODUCT
-    // =============================
     public void deleteProduct(String id) {
         System.out.println("🗑️ Deleting product with ID: " + id);
         productRepo.deleteById(id);
