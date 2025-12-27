@@ -33,5 +33,14 @@ public class WishlistService {
         return wishlistRepo.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Wishlist empty"));
     }
+    public Wishlist removeFromWishlist(String userId, String productId) {
+
+        Wishlist wishlist = wishlistRepo.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Wishlist not found"));
+
+        wishlist.getProductIds().remove(productId);
+        return wishlistRepo.save(wishlist);
+    }
+
 }
 

@@ -29,5 +29,15 @@ public class WishlistController {
     public Wishlist getWishlist(Authentication authentication) {
         return wishlistService.getWishlist(authentication.getName());
     }
+    @DeleteMapping("/{productId}")
+    public Wishlist removeFromWishlist(
+            @PathVariable String productId,
+            Authentication authentication) {
+
+        return wishlistService.removeFromWishlist(
+                authentication.getName(), productId
+        );
+    }
+
 }
 
