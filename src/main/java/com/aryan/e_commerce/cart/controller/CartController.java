@@ -2,6 +2,7 @@ package com.aryan.e_commerce.cart.controller;
 
 import com.aryan.e_commerce.cart.Cart;
 import com.aryan.e_commerce.cart.dto.AddToCartRequest;
+import com.aryan.e_commerce.cart.dto.UpdateCartQuantityRequest;
 import com.aryan.e_commerce.cart.service.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -29,14 +30,32 @@ public class CartController {
     public Cart viewCart(Authentication authentication) {
         return cartService.getCart(authentication.getName());
     }
-    @DeleteMapping("/remove/{productId}")
+    @DeleteMapping("/remove")
     public Cart removeFromCart(
-            @PathVariable String productId,
+            @RequestParam String productId,
+            @RequestParam String sku,
+            @RequestParam String color,
+            @RequestParam Double lengthInMeters,
             Authentication authentication) {
 
         return cartService.removeFromCart(
-                authentication.getName(), productId
+                authentication.getName(),
+                productId,
+                sku,
+                color,
+                lengthInMeters
         );
     }
+
+    @PutMapping("/update")
+    public Cart updateCartQuantity(
+            @RequestBody UpdateCartQuantityRequest request,
+            Authentication authentication) {
+
+        return cartService.updateQuantity(
+                authentication.getName(), request
+        );
+    }
+
 
 }

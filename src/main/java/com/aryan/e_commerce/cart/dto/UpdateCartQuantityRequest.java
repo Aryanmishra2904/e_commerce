@@ -4,6 +4,11 @@ import lombok.Data;
 
 @Data
 public class UpdateCartQuantityRequest {
+
     private String productId;
-    private int quantity;
+    private String sku;
+    private String color;
+    private Double lengthInMeters;
+
+    private Integer quantity;
 }

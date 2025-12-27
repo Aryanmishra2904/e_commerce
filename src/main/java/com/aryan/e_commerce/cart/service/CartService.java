@@ -4,6 +4,7 @@ import com.aryan.e_commerce.cart.Cart;
 import com.aryan.e_commerce.cart.CartItem;
 import com.aryan.e_commerce.cart.CartRepository;
 import com.aryan.e_commerce.cart.dto.AddToCartRequest;
+import com.aryan.e_commerce.cart.dto.UpdateCartQuantityRequest;
 import com.aryan.e_commerce.product.Product;
 import com.aryan.e_commerce.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -69,16 +70,68 @@ public class CartService {
         return cartRepo.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Cart is empty"));
     }
-    public Cart removeFromCart(String userId, String productId) {
+    public Cart removeFromCart(
+            String userId,
+            String productId,
+            String sku,
+            String color,
+            Double lengthInMeters
+    ) {
 
         Cart cart = cartRepo.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Cart not found"));
 
-        cart.getItems().removeIf(
-                item -> item.getProductId().equals(productId)
+        boolean removed = cart.getItems().removeIf(item ->
+                item.getProductId().equals(productId) &&
+                        item.getSku().equals(sku) &&
+                        item.getColor().equals(color) &&
+                        item.getLengthInMeters().equals(lengthInMeters)
         );
+
+        if (!removed) {
+            throw new RuntimeException("Cart item not found");
+        }
 
         return cartRepo.save(cart);
     }
+    public Cart updateQuantity(String userId, UpdateCartQuantityRequest request) {
+
+        if (request.getQuantity() == null || request.getQuantity() <= 0) {
+            throw new RuntimeException("Quantity must be greater than zero");
+        }
+
+        Cart cart = cartRepo.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Cart not found"));
+
+        // Validate stock again
+        Product product = productRepo.findById(request.getProductId())
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        if (product.getStock() < request.getQuantity()) {
+            throw new RuntimeException("Insufficient stock");
+        }
+
+        boolean updated = false;
+
+        for (CartItem item : cart.getItems()) {
+            if (
+                    item.getProductId().equals(request.getProductId()) &&
+                            item.getSku().equals(request.getSku()) &&
+                            item.getColor().equals(request.getColor()) &&
+                            item.getLengthInMeters().equals(request.getLengthInMeters())
+            ) {
+                item.setQuantity(request.getQuantity());
+                updated = true;
+                break;
+            }
+        }
+
+        if (!updated) {
+            throw new RuntimeException("Cart item not found");
+        }
+
+        return cartRepo.save(cart);
+    }
+
 
 }
