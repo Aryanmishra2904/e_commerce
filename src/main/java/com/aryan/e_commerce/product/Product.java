@@ -5,14 +5,15 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.TextIndexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+@Document(collection = "products")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "products")
 public class Product {
 
     @Id
@@ -30,18 +31,19 @@ public class Product {
     private String brand;
 
     @TextIndexed
-    private String category;   // Silk Saree, Banarasi Saree, Soft Silk
+    private String category;
 
     private Double price;
 
     private Double discount;
 
+    private int stock;               // ✅ REQUIRED
+
     private Map<String, String> specifications;
-    // e.g { "fabric": "Silk", "pattern": "Banarasi" }
 
     private List<String> availableColors;
 
-    private boolean isActive;
+    private Boolean isActive;
 
-    private long createdAt;
+    private Instant createdAt;
 }
