@@ -29,4 +29,14 @@ public class CartController {
     public Cart viewCart(Authentication authentication) {
         return cartService.getCart(authentication.getName());
     }
+    @DeleteMapping("/remove/{productId}")
+    public Cart removeFromCart(
+            @PathVariable String productId,
+            Authentication authentication) {
+
+        return cartService.removeFromCart(
+                authentication.getName(), productId
+        );
+    }
+
 }

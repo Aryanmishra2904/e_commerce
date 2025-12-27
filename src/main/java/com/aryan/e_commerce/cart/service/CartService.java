@@ -8,6 +8,8 @@ import com.aryan.e_commerce.product.Product;
 import com.aryan.e_commerce.product.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import java.util.Optional;
+
 
 @Service
 @RequiredArgsConstructor
@@ -33,17 +35,31 @@ public class CartService {
                 });
 
         Optional<CartItem> existingItem = cart.getItems().stream()
-                .filter(i -> i.getProductId().equals(request.getProductId()))
+                .filter(item ->
+                        item.getProductId().equals(request.getProductId()) &&
+                                item.getSku().equals(request.getSku()) &&
+                                item.getColor().equals(request.getColor())
+                )
                 .findFirst();
 
         if (existingItem.isPresent()) {
+
             existingItem.get().setQuantity(
                     existingItem.get().getQuantity() + request.getQuantity()
             );
+
         } else {
-            cart.getItems().add(
-                    new CartItem(request.getProductId(), request.getQuantity())
-            );
+
+            CartItem newItem = CartItem.builder()
+                    .productId(request.getProductId())
+                    .sku(request.getSku())
+                    .color(request.getColor())
+                    .lengthInMeters(request.getLengthInMeters())
+                    .quantity(request.getQuantity())
+                    .priceAtThatTime(product.getPrice()) // snapshot price
+                    .build();
+
+            cart.getItems().add(newItem);
         }
 
         return cartRepo.save(cart);
@@ -53,4 +69,16 @@ public class CartService {
         return cartRepo.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Cart is empty"));
     }
+    public Cart removeFromCart(String userId, String productId) {
+
+        Cart cart = cartRepo.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Cart not found"));
+
+        cart.getItems().removeIf(
+                item -> item.getProductId().equals(productId)
+        );
+
+        return cartRepo.save(cart);
+    }
+
 }
