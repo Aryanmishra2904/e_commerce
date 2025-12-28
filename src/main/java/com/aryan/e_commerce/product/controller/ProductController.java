@@ -3,9 +3,8 @@ package com.aryan.e_commerce.product.controller;
 import com.aryan.e_commerce.product.Product;
 import com.aryan.e_commerce.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/products")
@@ -13,22 +12,21 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
-
-    // 🔓 Browse products (Redis cached)
     @GetMapping
-    public List<Product> getAllProducts() {
-        return productService.getAllProducts();
+    public Page<Product> getAllProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sort
+    ) {
+        return productService.getAllProducts(page, size, sort);
     }
-
-    // 🔓 View specific product (Redis cached)
-    @GetMapping("/{id}")
-    public Product getProductById(@PathVariable String id) {
-        return productService.getProduct(id);
-    }
-
-    // 🔍 Search products (Redis + MongoDB text search)
     @GetMapping("/search")
-    public List<Product> searchProducts(@RequestParam String q) {
-        return productService.searchProducts(q);
+    public Page<Product> searchProducts(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sort
+    ) {
+        return productService.searchProducts(q, page, size, sort);
     }
 }
